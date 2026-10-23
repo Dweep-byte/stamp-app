@@ -220,35 +220,43 @@ async function handleSendOtp() {
     return;
   }
 
-  const fullPhone = `+91${rawPhone}`;
-  currentPhone = fullPhone;
-
+  const withPrefix = `+91${rawPhone}`;
   sendOtpBtn.disabled = true;
   sendOtpSpinner.classList.remove('hidden');
 
   try {
-    if (supabase) {
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: fullPhone,
-      });
+    let phoneFormatToUse = withPrefix;
 
-      if (error) {
-        console.warn('Supabase signInWithOtp notice:', error.message);
-        // If developer is using test phone or custom setup
-        showToast(error.message, 'error');
-      } else {
-        showToast(`Verification code sent to ${fullPhone}!`, 'success');
+    if (supabase) {
+      // 1. Try sending with +91 prefix
+      let res = await supabase.auth.signInWithOtp({ phone: withPrefix });
+
+      // 2. If it fails, try raw 10 digits (in case Supabase test numbers has 9999999999 without +91)
+      if (res.error) {
+        const rawRes = await supabase.auth.signInWithOtp({ phone: rawPhone });
+        if (!rawRes.error) {
+          res = rawRes;
+          phoneFormatToUse = rawPhone;
+        }
       }
+
+      if (res.error) {
+        showToast(res.error.message || 'Failed to send OTP', 'error');
+        return; // Don't proceed to OTP step if sending failed
+      }
+
+      currentPhone = phoneFormatToUse;
+      showToast(`Verification code sent for ${rawPhone}!`, 'success');
     } else {
       // Dev mode without live Supabase keys
+      currentPhone = withPrefix;
       showToast(`Development Mode: OTP sent! (Use 123456)`, 'success');
     }
 
     // Switch to Step 2 (OTP)
-    otpSentTo.textContent = `${fullPhone}`;
+    otpSentTo.textContent = `+91 ${rawPhone}`;
     stepPhone.classList.add('hidden');
     stepOtp.classList.remove('hidden');
-    otpInput.value = '';
     otpInput.focus();
     startCountdown();
   } catch (err) {
@@ -272,21 +280,38 @@ async function handleVerifyOtp() {
 
   try {
     if (supabase) {
-      const { data, error } = await supabase.auth.verifyOtp({
+      // 1. Try with current phone format
+      let res = await supabase.auth.verifyOtp({
         phone: currentPhone,
         token: otp,
         type: 'sms',
       });
 
-      if (error) {
-        showToast(`Verification failed: ${error.message}`, 'error');
-        verifyOtpBtn.disabled = false;
-        verifyOtpSpinner.classList.add('hidden');
+      // 2. If that fails, try alternative format (with/without +91)
+      if (res.error) {
+        const altPhone = currentPhone.startsWith('+91')
+          ? currentPhone.replace('+91', '')
+          : `+91${currentPhone}`;
+
+        const altRes = await supabase.auth.verifyOtp({
+          phone: altPhone,
+          token: otp,
+          type: 'sms',
+        });
+
+        if (!altRes.error) {
+          res = altRes;
+          currentPhone = altPhone;
+        }
+      }
+
+      if (res.error) {
+        showToast(`Verification failed: ${res.error.message}`, 'error');
         return;
       }
 
-      currentUser = data.user;
-      currentPhone = data.user.phone || currentPhone;
+      currentUser = res.data.user;
+      currentPhone = res.data.user?.phone || currentPhone;
     }
 
     // Remember in localStorage for quick reconnect
@@ -602,12 +627,10 @@ function setupEventListeners() {
   resendOtpBtn.addEventListener('click', handleSendOtp);
 
   // Quick fill test button
-  fillTestPhoneBtn.addEventListener('click', () => {
+  fillTestPhoneBtn.addEventListener('click', async () => {
     phoneInput.value = '9999999999';
-    handleSendOtp();
-    setTimeout(() => {
-      otpInput.value = '123456';
-    }, 600);
+    await handleSendOtp();
+    otpInput.value = '123456';
   });
 
   // Amount preset chips
