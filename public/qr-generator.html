@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Table QR Code Standee • Cafe Delight</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --marigold: #f5b73d;
+      --ink: #192562;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: #f0f2f8;
+      color: var(--ink);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px 16px;
+      margin: 0;
+    }
+    .controls {
+      background: #ffffff;
+      padding: 16px 20px;
+      border-radius: 14px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+      width: 100%;
+      max-width: 420px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .controls label {
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+    .controls input {
+      padding: 10px 14px;
+      border: 2px solid #ccd2ed;
+      border-radius: 10px;
+      font-size: 0.95rem;
+    }
+    .print-btn {
+      background: var(--ink);
+      color: #ffffff;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    /* Table Standee Print Sheet */
+    .standee-card {
+      background: #ffffff;
+      border: 4px solid var(--ink);
+      border-radius: 24px;
+      padding: 36px 28px;
+      text-align: center;
+      width: 100%;
+      max-width: 360px;
+      box-shadow: 0 12px 36px rgba(25, 37, 98, 0.15);
+      position: relative;
+    }
+    .standee-icon {
+      font-size: 3rem;
+      margin-bottom: 10px;
+    }
+    .standee-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+    .standee-sub {
+      color: #5e688e;
+      font-size: 0.92rem;
+      margin-bottom: 20px;
+    }
+    .qr-container {
+      background: #fff8e8;
+      padding: 16px;
+      border-radius: 16px;
+      display: inline-block;
+      margin-bottom: 20px;
+      border: 2px dashed #f5b73d;
+    }
+    .qr-container img {
+      width: 200px;
+      height: 200px;
+      display: block;
+    }
+    .standee-banner {
+      background: var(--marigold);
+      color: var(--ink);
+      padding: 10px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 0.95rem;
+      margin-bottom: 12px;
+    }
+    .standee-footer {
+      font-size: 0.78rem;
+      color: #7b83a3;
+    }
+    @media print {
+      body { background: #ffffff; padding: 0; }
+      .controls, .nav-back { display: none; }
+      .standee-card { box-shadow: none; border-color: #000; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="controls">
+    <label for="app-url-input">Web App URL (Deployed Vercel link or local address):</label>
+    <input type="url" id="app-url-input" value="">
+    <button type="button" class="print-btn" onclick="window.print()">🖨️ Print Table Standee</button>
+    <a href="/" style="text-align:center; font-size:0.85rem; color:#192562; font-weight:700;">← Back to Stamp Card</a>
+  </div>
+
+  <div class="standee-card">
+    <div class="standee-icon">☕ 🎁</div>
+    <h1 class="standee-title">Collect Stamps & Get Free Gifts!</h1>
+    <p class="standee-sub">Scan with your phone camera to open your digital stamp card.</p>
+
+    <div class="qr-container">
+      <img id="qr-image" src="" alt="Scan QR Code to open stamp card">
+    </div>
+
+    <div class="standee-banner">
+      ⚡ Spend ₹100+ • Fill 6 Circles = Free Gift!
+    </div>
+
+    <p class="standee-footer">
+      No password needed • Quick Mobile & OTP Login
+    </p>
+  </div>
+
+  <script>
+    const urlInput = document.getElementById('app-url-input');
+    const qrImage = document.getElementById('qr-image');
+
+    // Default to current host
+    const currentOrigin = window.location.origin;
+    urlInput.value = currentOrigin;
+
+    function updateQR() {
+      const url = urlInput.value || currentOrigin;
+      qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}`;
+    }
+
+    urlInput.addEventListener('input', updateQR);
+    updateQR();
+  </script>
+</body>
+</html>
